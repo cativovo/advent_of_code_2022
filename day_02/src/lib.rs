@@ -8,8 +8,11 @@ pub fn calculate_points() -> MyResult<()> {
     let mut result = 0;
 
     for row in input.iter() {
-        let row = row.split_once(" ").unwrap_or_default();
-        result += calculate_row_points(row);
+        let row: Vec<char> = row.chars().collect();
+
+        if row.len() == 3 {
+            result += calculate_row_points((row[0], row[2]));
+        }
     }
 
     println!("result: {result}");
@@ -25,36 +28,59 @@ fn to_vector(input: String) -> Vec<String> {
     input.split("\n").map(|el| el.to_string()).collect()
 }
 
-fn get_outcome_points((elf, me): (&str, &str)) -> u8 {
-    // Elf's -> A - Rock, B - Paper, C - Scissors
-    // Me -> X - Rock, Y - Paper, Z - Scissors
-    match (elf, me) {
-        ("A", "X") => 3,
-        ("A", "Y") => 6,
-        ("A", "Z") => 0,
-
-        ("B", "X") => 0,
-        ("B", "Y") => 3,
-        ("B", "Z") => 6,
-
-        ("C", "X") => 6,
-        ("C", "Y") => 0,
-        ("C", "Z") => 3,
-
+fn get_outcome_points(outcome: char) -> u8 {
+    // X - Lose, Y - Draw, Z - Win
+    match outcome {
+        'X' => 0,
+        'Y' => 3,
+        'Z' => 6,
         _ => 0,
     }
 }
 
-fn get_shape_points(shape: &str) -> u8 {
-    // X - Rock, Y - Paper, Z - Scissors
-    match shape {
-        "X" => 1,
-        "Y" => 2,
-        "Z" => 3,
+fn get_move_points(mov: char) -> u8 {
+    // A - Rock, B - Paper, C - Scissors
+    match mov {
+        'A' => 1,
+        'B' => 2,
+        'C' => 3,
         _ => 0,
     }
 }
 
-fn calculate_row_points(row: (&str, &str)) -> u32 {
-    (get_outcome_points(row) + get_shape_points(row.1)).into()
+fn generate_losing_move(elf_move: char) -> Option<char> {
+    // A - Rock, B - Paper, C - Scissors
+    match elf_move {
+        'A' => Some('C'),
+        'B' => Some('A'),
+        'C' => Some('B'),
+        _ => None,
+    }
+}
+
+fn generate_winning_move(elf_move: char) -> Option<char> {
+    // A - Rock, B - Paper, C - Scissors
+    match elf_move {
+        'A' => Some('B'),
+        'B' => Some('C'),
+        'C' => Some('A'),
+        _ => None,
+    }
+}
+
+fn generate_move((elf_move, outcome): (char, char)) -> Option<char> {
+    // X - Lose, Y - Draw, Z - Win
+    match outcome {
+        'X' => generate_losing_move(elf_move),
+        'Y' => Some(elf_move.into()),
+        'Z' => generate_winning_move(elf_move),
+        _ => None,
+    }
+}
+
+fn calculate_row_points(row: (char, char)) -> u32 {
+    match generate_move(row) {
+        Some(my_move) => (get_outcome_points(row.1) + get_move_points(my_move)).into(),
+        None => 0,
+    }
 }
