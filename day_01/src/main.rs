@@ -5,8 +5,12 @@ use std::{
 };
 
 fn main() {
-    if let Ok(highest_calories) = get_highest_calories() {
-        println!("{highest_calories}");
+    if let Ok(sorted_calories) = sort_calories() {
+        let highest_calories = sorted_calories[0];
+        println!("highest calories: {highest_calories}");
+
+        let sum_of_top_three = get_sum_of_top_three(&sorted_calories);
+        println!("sum of top three: {sum_of_top_three}");
     }
 }
 
@@ -32,7 +36,7 @@ fn read_input() -> Result<Vec<Vec<u32>>, Box<dyn Error>> {
     Ok(result)
 }
 
-fn get_highest_calories() -> Result<u32, Box<dyn Error>> {
+fn sort_calories() -> Result<Vec<u32>, Box<dyn Error>> {
     let input = read_input()?;
 
     let mut result: Vec<u32> = input
@@ -42,5 +46,9 @@ fn get_highest_calories() -> Result<u32, Box<dyn Error>> {
 
     result.sort_by(|a, b| b.cmp(a));
 
-    Ok(result[0])
+    Ok(result)
+}
+
+fn get_sum_of_top_three(calories: &Vec<u32>) -> u32 {
+    calories[..=2].iter().sum()
 }
