@@ -20,8 +20,13 @@ pub fn run() -> MyResult<()> {
     for (line_number, line) in reader.lines().enumerate() {
         let item = line?;
 
-        get_badges(&mut badges, &mut items_in_group, line_number, &item);
-        get_duplicate_item(&mut duplicate_items, &item)?;
+        if let Some(badge) = get_badge(&mut items_in_group, line_number, &item) {
+            badges.push(badge);
+        };
+
+        if let Some(item) = get_duplicate_item(&item)? {
+            duplicate_items.push(item);
+        };
     }
 
     let duplicate_items_sum = calculate_priorities_sum(duplicate_items);
@@ -41,35 +46,36 @@ fn in_both_compartments(items: &str, to_find: char) -> bool {
     first_compartment.contains(to_find) && second_compartment.contains(to_find)
 }
 
-fn get_duplicate_item(container: &mut Vec<char>, item: &str) -> MyResult<()> {
+fn get_duplicate_item(item: &str) -> MyResult<Option<char>> {
+    let mut result = None;
+
     for c in item.chars() {
         if in_both_compartments(&item, c) {
-            container.push(c);
+            result = Some(c);
             break;
         }
     }
 
-    Ok(())
+    Ok(result)
 }
 
-fn get_badges(
-    container: &mut Vec<char>,
-    items_in_group: &mut String,
-    line_number: usize,
-    item: &str,
-) {
+fn get_badge(items_in_group: &mut String, line_number: usize, item: &str) -> Option<char> {
+    let mut result = None;
+
     items_in_group.push_str(&remove_duplicate(&item));
 
     if (line_number + 1) % 3 == 0 {
         for c in items_in_group.chars() {
             if items_in_group.matches(c).count() == 3 {
-                container.push(c);
+                result = Some(c);
                 break;
             }
         }
 
         items_in_group.clear();
     }
+
+    result
 }
 
 fn get_priority(item: char) -> u8 {
@@ -126,31 +132,27 @@ mod tests {
 
     #[test]
     fn test_get_duplicate_item() -> MyResult<()> {
-        let mut duplicate_items: Vec<char> = vec![];
-
-        get_duplicate_item(&mut duplicate_items, "abcb")?;
-        get_duplicate_item(&mut duplicate_items, "defe")?;
-        get_duplicate_item(&mut duplicate_items, "hjkh")?;
-
-        assert_eq!(duplicate_items, ['b', 'e', 'h']);
+        let result = get_duplicate_item("abcb")?;
+        assert_eq!(result, Some('b'));
 
         Ok(())
     }
 
     #[test]
-    fn test_get_badges() {
-        let mut badges: Vec<char> = vec![];
+    fn test_get_badge() {
         let mut items_in_group = String::new();
 
-        get_badges(&mut badges, &mut items_in_group, 0, "abcdY");
+        let result = get_badge(&mut items_in_group, 0, "abcdY");
         assert_eq!(items_in_group, "abcdY".to_string());
+        assert_eq!(result, None);
 
-        get_badges(&mut badges, &mut items_in_group, 1, "Yefg");
+        let result = get_badge(&mut items_in_group, 1, "Yefg");
         assert_eq!(items_in_group, "abcdYYefg".to_string());
+        assert_eq!(result, None);
 
-        get_badges(&mut badges, &mut items_in_group, 2, "hYij");
+        let result = get_badge(&mut items_in_group, 2, "hYij");
         assert_eq!(items_in_group, "".to_string());
-        assert_eq!(badges, ['Y']);
+        assert_eq!(result, Some('Y'));
     }
 
     #[test]
