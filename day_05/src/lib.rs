@@ -1,3 +1,4 @@
+// TODO: refactor and add unit tests
 use std::{error::Error, fs};
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -18,41 +19,63 @@ pub fn run() -> MyResult<()> {
 
     for mov in moves.into_iter() {
         let pos = get_position(&mov);
-        let mut crate_count = pos[0];
+        let crate_count = pos[0] as usize;
+        // let mut crate_count = pos[0];
         let stack_from_pos = (pos[1] - 1) as usize;
         let stack_to_pos = (pos[2] - 1) as usize;
 
-        loop {
-            if crate_count == 0 {
-                break;
-            }
+        let mut crates_to_move: Vec<String> = vec![];
 
-            let mut crat_to_move = String::new();
-
-            if let Some(stack_from) = stacks.get_mut(stack_from_pos) {
-                for (i, crat) in stack_from.iter().enumerate() {
-                    if crat != SPACING {
-                        crat_to_move.clear();
-                        crat_to_move.push_str(crat);
-                        stack_from.remove(i);
-                        break;
-                    }
+        if let Some(stack_from) = stacks.get_mut(stack_from_pos) {
+            for (i, crat) in stack_from.iter().enumerate() {
+                if crat != SPACING {
+                    crates_to_move.clear();
+                    crates_to_move.extend(stack_from.drain(i..i + crate_count));
+                    break;
                 }
             }
-
-            if let Some(stack_to) = stacks.get_mut(stack_to_pos) {
-                for (i, crat) in stack_to.iter().enumerate() {
-                    if crat != SPACING {
-                        stack_to.insert(i, crat_to_move);
-                        break;
-                    }
-                }
-            }
-
-            crate_count -= 1;
         }
 
-        print!("\x1B[2J\x1B[1;1H");
+        if let Some(stack_to) = stacks.get_mut(stack_to_pos) {
+            for (i, crat) in stack_to.iter().enumerate() {
+                if crat != SPACING {
+                    stack_to.splice(i..i, crates_to_move);
+                    break;
+                }
+            }
+        }
+
+        // loop {
+        //     if crate_count == 0 {
+        //         break;
+        //     }
+        //
+        //     let mut crat_to_move = String::new();
+        //
+        //     if let Some(stack_from) = stacks.get_mut(stack_from_pos) {
+        //         for (i, crat) in stack_from.iter().enumerate() {
+        //             if crat != SPACING {
+        //                 crat_to_move.clear();
+        //                 crat_to_move.push_str(crat);
+        //                 stack_from.drain(i..i + 1 as usize);
+        //                 break;
+        //             }
+        //         }
+        //     }
+        //
+        //     if let Some(stack_to) = stacks.get_mut(stack_to_pos) {
+        //         for (i, crat) in stack_to.iter().enumerate() {
+        //             if crat != SPACING {
+        //                 stack_to.insert(i, crat_to_move);
+        //                 break;
+        //             }
+        //         }
+        //     }
+        //
+        //     crate_count -= 1;
+        // }
+
+        // print!("\x1B[2J\x1B[1;1H");
         println!("{}", mov);
         println!();
         print_stacks(&stacks);
@@ -75,7 +98,8 @@ fn read_input() -> MyResult<Vec<String>> {
 fn get_stacks_and_moves(input: Vec<String>) -> (Stacks, Moves) {
     let stacks_count = 9;
     let stacks_end = 8;
-    let moves_start = 10;
+    let moves_start = stacks_end + 2;
+    let crate_len = 3;
 
     let mut stacks: Vec<Vec<String>> = vec![];
     let moves = input[moves_start..].to_vec();
@@ -83,7 +107,6 @@ fn get_stacks_and_moves(input: Vec<String>) -> (Stacks, Moves) {
 
     for row in input[..=stacks_end].into_iter() {
         let mut cur_index = 0;
-        let crate_len = 3;
 
         for i in 0..stacks_count {
             let crat = row[cur_index..crate_len + cur_index].to_string();
